@@ -13,43 +13,45 @@ using namespace clang;
 namespace {
 
 class PrintFunctionsConsumer : public ASTConsumer {
-public:
-  PrintFunctionsConsumer(CompilerInstance &compilerInstance,
-                         std::set<std::string> parsedTemplates)
-      : m_compilerInstance(compilerInstance),
-        m_parsedTemplates(parsedTemplates) {}
-
-  bool HandleTopLevelDecl(DeclGroupRef declGroupRef) override {
-    for (auto &decl : declGroupRef) {
-      if (const NamedDecl *ND = dyn_cast<NamedDecl>(decl)) {
-        std::cout << "top-level-decl: \"" << ND->getNameAsString() << std::endl;
-      }
+  public:
+    PrintFunctionsConsumer(
+        CompilerInstance& compilerInstance, std::set<std::string> parsedTemplates)
+        : m_compilerInstance(compilerInstance)
+        , m_parsedTemplates(parsedTemplates)
+    {
     }
-    return true;
-  }
 
-private:
-  CompilerInstance &m_compilerInstance;
-  std::set<std::string> m_parsedTemplates;
+    bool HandleTopLevelDecl(DeclGroupRef declGroupRef) override
+    {
+        for (auto& decl : declGroupRef) {
+            if (const NamedDecl* ND = dyn_cast<NamedDecl>(decl)) {
+                std::cout << "top-level-decl: \"" << ND->getNameAsString() << std::endl;
+            }
+        }
+        return true;
+    }
+
+  private:
+    CompilerInstance& m_compilerInstance;
+    std::set<std::string> m_parsedTemplates;
 };
 
 class PrintFunctionNamesAction : public PluginASTAction {
-protected:
-  std::unique_ptr<ASTConsumer>
-  CreateASTConsumer(CompilerInstance &compilerInstance,
-                    llvm::StringRef) override {
-    return llvm::make_unique<PrintFunctionsConsumer>(compilerInstance,
-                                                    m_parsedTemplates);
-  }
+  protected:
+    std::unique_ptr<ASTConsumer>
+    CreateASTConsumer(CompilerInstance& compilerInstance, llvm::StringRef) override
+    {
+        return llvm::make_unique<PrintFunctionsConsumer>(compilerInstance, m_parsedTemplates);
+    }
 
-  bool ParseArgs(const CompilerInstance &,
-                 const std::vector<std::string> &) override {
-    return true;
-  }
+    bool ParseArgs(const CompilerInstance&, const std::vector<std::string>&) override
+    {
+        return true;
+    }
 
-private:
-  std::set<std::string> m_parsedTemplates;
-  };
+  private:
+    std::set<std::string> m_parsedTemplates;
+};
 
 } // namespace
 
