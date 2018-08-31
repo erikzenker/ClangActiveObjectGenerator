@@ -12,20 +12,27 @@ using namespace clang;
 
 namespace {
 
-class PrintFunctionsConsumer : public ASTConsumer {
+class MyASTConsumer : public ASTConsumer {
   public:
-    PrintFunctionsConsumer(
+    MyASTConsumer(
         CompilerInstance& compilerInstance, std::set<std::string> parsedTemplates)
         : m_compilerInstance(compilerInstance)
         , m_parsedTemplates(parsedTemplates)
     {
     }
 
+    /*
+     * Called for all top level declarations e.g.:
+     *  - free standing functions
+     *  - classes and structs
+     *  - global variables
+     */
     bool HandleTopLevelDecl(DeclGroupRef declGroupRef) override
     {
         for (auto& decl : declGroupRef) {
-            if (const NamedDecl* ND = dyn_cast<NamedDecl>(decl)) {
-                std::cout << "top-level-decl: \"" << ND->getNameAsString() << std::endl;
+            if (const NamedDecl* namedDecl = dyn_cast<NamedDecl>(decl)) {
+                std::cout << "top-level-decl: \"" << namedDecl->getNameAsString() << " "
+                          << namedDecl->getQualifiedNameAsString() << std::endl;
             }
         }
         return true;
@@ -36,12 +43,12 @@ class PrintFunctionsConsumer : public ASTConsumer {
     std::set<std::string> m_parsedTemplates;
 };
 
-class PrintFunctionNamesAction : public PluginASTAction {
+class MyPluginASTAction : public PluginASTAction {
   protected:
     std::unique_ptr<ASTConsumer>
     CreateASTConsumer(CompilerInstance& compilerInstance, llvm::StringRef) override
     {
-        return llvm::make_unique<PrintFunctionsConsumer>(compilerInstance, m_parsedTemplates);
+        return llvm::make_unique<MyASTConsumer>(compilerInstance, m_parsedTemplates);
     }
 
     bool ParseArgs(const CompilerInstance&, const std::vector<std::string>&) override
@@ -55,5 +62,5 @@ class PrintFunctionNamesAction : public PluginASTAction {
 
 } // namespace
 
-static FrontendPluginRegistry::Add<PrintFunctionNamesAction>
+static FrontendPluginRegistry::Add<MyPluginASTAction>
     X("learn-clang-ast", "learn how clang ast works");
