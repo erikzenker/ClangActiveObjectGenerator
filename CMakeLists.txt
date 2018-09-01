@@ -4,18 +4,20 @@ if( NOT MSVC ) # MSVC mangles symbols differently, and
                # LearnClangAst.export contains C++ symbols.
   if( NOT LLVM_REQUIRES_RTTI )
     if( NOT LLVM_REQUIRES_EH )
-      set(LLVM_EXPORTED_SYMBOL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/LearnClangAst.exports)
+      set(LLVM_EXPORTED_SYMBOL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/ClangActiveObject.exports)
     endif()
   endif()
 endif()
 
-add_llvm_loadable_module(LearnClangAst LearnClangAst.cpp PLUGIN_TOOL clang)
+add_llvm_loadable_module(ClangActiveObject ClangActiveObject.cpp PLUGIN_TOOL clang)
 
 if(LLVM_ENABLE_PLUGINS AND (WIN32 OR CYGWIN))
-  target_link_libraries(LearnClangAst PRIVATE
+  target_link_libraries(ClangActiveObject PRIVATE
     clangAST
     clangBasic
     clangFrontend
     LLVMSupport
     )
 endif()
+
+add_subdirectory(example)

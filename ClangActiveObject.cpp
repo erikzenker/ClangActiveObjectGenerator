@@ -63,4 +63,4 @@ class MyPluginASTAction : public PluginASTAction {
 } // namespace
 
 static FrontendPluginRegistry::Add<MyPluginASTAction>
-    X("learn-clang-ast", "learn how clang ast works");
+    X("clang-active-object", "generate active object from interface");
