@@ -12,5 +12,5 @@ public:
 class ICalculator {
 public:
     virtual ~ICalculator() = default;
-    virtual void add(std::size_t a, std::size_t b, const std::shared_ptr<IResultObserver>& resultObserver) = 0;
+    virtual void add(std::size_t a, std::size_t b, IResultObserver *resultObserver) = 0;
 };

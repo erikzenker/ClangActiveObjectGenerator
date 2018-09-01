@@ -10,23 +10,21 @@
 #include <memory>
 
 class IResultObserverActiveObject : public IResultObserver {
-public:
+  public:
     IResultObserverActiveObject(
-            const std::shared_ptr<IResultObserver>& impl, boost::asio::io_service& ioService)
-            : m_impl(impl)
-            , m_ioService(ioService)
+        const std::shared_ptr<IResultObserver>& impl, boost::asio::io_service& ioService)
+        : m_impl(impl)
+        , m_ioService(ioService)
     {
     }
 
-public: // IResultObserver
-    void observe(std::size_t result)
-    override
+  public: // IResultObserver
+    void observe(std::size_t result) override
     {
-        m_ioService.post(
-                [this, result]() { m_impl.lock()->observe(result); });
+        m_ioService.post([this, result]() { m_impl.lock()->observe(result); });
     }
 
-private:
+  private:
     std::weak_ptr<IResultObserver> m_impl;
     boost::asio::io_service& m_ioService;
 };
@@ -48,8 +46,7 @@ class ICalculatorActiveObject : public ICalculator {
     }
 
   public: // ICalculator
-    void add(std::size_t a, std::size_t b, const std::shared_ptr<IResultObserver>& resultObserver)
-        override
+    void add(std::size_t a, std::size_t b, IResultObserver* resultObserver) override
     {
         m_ioService.post(
             [this, a, b, resultObserver]() { m_impl.lock()->add(a, b, resultObserver); });
