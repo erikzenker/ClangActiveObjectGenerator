@@ -12,35 +12,67 @@ using namespace clang;
 
 namespace {
 
-class MyASTConsumer : public ASTConsumer {
+class FindInterfaceRecursiveASTVisitor
+    : public RecursiveASTVisitor<FindInterfaceRecursiveASTVisitor> {
   public:
-    MyASTConsumer(
-        CompilerInstance& compilerInstance, std::set<std::string> parsedTemplates)
+    FindInterfaceRecursiveASTVisitor(
+        CompilerInstance& compilerInstance, std::string&& interfaceName)
         : m_compilerInstance(compilerInstance)
-        , m_parsedTemplates(parsedTemplates)
+        , m_astContext(m_compilerInstance.getASTContext())
+        , m_interfaceName(interfaceName)
     {
     }
 
-    /*
-     * Called for all top level declarations e.g.:
-     *  - free standing functions
-     *  - classes and structs
-     *  - global variables
-     */
-    bool HandleTopLevelDecl(DeclGroupRef declGroupRef) override
+  public: // RecursiveASTVisitor
+    bool VisitCXXRecordDecl(CXXRecordDecl* declaration)
     {
-        for (auto& decl : declGroupRef) {
-            if (const NamedDecl* namedDecl = dyn_cast<NamedDecl>(decl)) {
-                std::cout << "top-level-decl: \"" << namedDecl->getNameAsString() << " "
-                          << namedDecl->getQualifiedNameAsString() << std::endl;
+        if (isInMainFile(declaration)) {
+            if (declaration->getQualifiedNameAsString() == m_interfaceName) {
+                auto begin = declaration->method_begin();
+                auto end = declaration->method_end();
+                for(auto methodIt = begin; methodIt != end; methodIt++){
+                    if(methodIt->isUserProvided()){
+                        methodIt->dump();
+                    }
+                }
             }
         }
         return true;
     }
 
   private:
+    bool isInMainFile(CXXRecordDecl* declaration)
+    {
+        return m_astContext.getSourceManager().isInMainFile(declaration->getBeginLoc());
+    }
+
+  private:
     CompilerInstance& m_compilerInstance;
-    std::set<std::string> m_parsedTemplates;
+    ASTContext& m_astContext;
+    const std::string m_interfaceName;
+};
+
+class MyASTConsumer : public ASTConsumer {
+  public:
+    explicit MyASTConsumer(CompilerInstance& compilerInstance)
+        : m_compilerInstance(compilerInstance)
+        , m_interfaceVisitor(m_compilerInstance, "ICalculator")
+    {
+    }
+
+    /*
+     * Called when the AST of the whole translation unit was parsed.
+     * It provide the AST by the AST context which can be
+     * processed by an recursive AST visitor.
+     */
+    void HandleTranslationUnit(ASTContext& astContext) override
+    {
+        m_interfaceVisitor.TraverseDecl(astContext.getTranslationUnitDecl());
+    }
+
+  private:
+    CompilerInstance& m_compilerInstance;
+    FindInterfaceRecursiveASTVisitor m_interfaceVisitor;
 };
 
 class MyPluginASTAction : public PluginASTAction {
@@ -48,16 +80,13 @@ class MyPluginASTAction : public PluginASTAction {
     std::unique_ptr<ASTConsumer>
     CreateASTConsumer(CompilerInstance& compilerInstance, llvm::StringRef) override
     {
-        return llvm::make_unique<MyASTConsumer>(compilerInstance, m_parsedTemplates);
+        return llvm::make_unique<MyASTConsumer>(compilerInstance);
     }
 
     bool ParseArgs(const CompilerInstance&, const std::vector<std::string>&) override
     {
         return true;
     }
-
-  private:
-    std::set<std::string> m_parsedTemplates;
 };
 
 } // namespace
