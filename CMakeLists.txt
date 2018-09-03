@@ -11,6 +11,10 @@ endif()
 
 add_llvm_loadable_module(ClangActiveObject ClangActiveObject.cpp PLUGIN_TOOL clang)
 
+add_subdirectory(external/mstch)
+include_directories(${mstch_INCLUDE_DIR})
+target_link_libraries(ClangActiveObject mstch)
+
 if(LLVM_ENABLE_PLUGINS AND (WIN32 OR CYGWIN))
   target_link_libraries(ClangActiveObject PRIVATE
     clangAST

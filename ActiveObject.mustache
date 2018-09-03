@@ -1,0 +1,25 @@
+#pragma once
+
+#include "{{InterfaceHeaderFileName}}"
+#include "MakeActiveObject.h"
+#include <boost/asio/io_service.hpp>
+#include <memory>
+
+class {{InterfaceImplName}} : public {{InterfaceName}} {
+  std::weak_ptr<{{InterfaceName}}> m_impl;
+  boost::asio::io_service& m_ioService;
+public:
+  {{InterfaceImplName}}(const std::shared_ptr<{{InterfaceName}}>& impl, boost::asio::io_service& ioService)
+      : m_impl(impl)
+      , m_ioService(ioService)
+  {
+  }
+
+  public: // {{InterfaceName}}
+    {{#Methods}}{{Signature}}{
+        m_ioService.post(
+            [this, {{Parameters}}](){
+                m_impl.lock()->{{FunctionCall}};
+            });
+    }
+};

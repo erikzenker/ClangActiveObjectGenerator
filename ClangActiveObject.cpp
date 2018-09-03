@@ -6,6 +6,9 @@
 #include "clang/Sema/Sema.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include <mstch/mstch.hpp>
+
+#include <fstream>
 #include <iostream>
 #include <memory>
 using namespace clang;
@@ -28,13 +31,35 @@ class FindInterfaceRecursiveASTVisitor
     {
         if (isInMainFile(declaration)) {
             if (declaration->getQualifiedNameAsString() == m_interfaceName) {
+                auto activeObjectTemplateStream
+                    = std::ifstream("ActiveObject.mustache", std::ios::in);
+                auto activeObjectTemplate = streamToString(activeObjectTemplateStream);
+
+                auto interfaceHeaderFileName = getFileName(declaration);
+                auto interfaceName = m_interfaceName;
+                auto interfaceImplName = m_interfaceName + "ActiveObject";
+
+                mstch::array context{ { mstch::map{
+                    { "InterfaceHeaderFileName", getFileName(declaration) },
+                    { "InterfaceName", m_interfaceName },
+                    { "InterfaceImplName", m_interfaceName + "ActiveObject" } } } };
+
+                mstch::array methods;
+
                 auto begin = declaration->method_begin();
                 auto end = declaration->method_end();
-                for(auto methodIt = begin; methodIt != end; methodIt++){
-                    if(methodIt->isUserProvided()){
-                        methodIt->dump();
+                for (auto methodIt = begin; methodIt != end; methodIt++) {
+                    if (methodIt->isUserProvided() && methodIt->isPure()) {
+                        methods.push_back(mstch::array{
+                            mstch::map{
+                                { "Signature", std::string{ "void foo(int a) override" } } },
+                            mstch::map{ { "Parameters", std::string{ "a" } } },
+                            mstch::map{ { "FunctionCall", std::string{ "foo(a)" } } } });
                     }
                 }
+
+                context.push_back(mstch::map{ { "Methods", methods } });
+                std::cout << mstch::render(activeObjectTemplate, context) << std::endl;
             }
         }
         return true;
@@ -44,6 +69,18 @@ class FindInterfaceRecursiveASTVisitor
     bool isInMainFile(CXXRecordDecl* declaration)
     {
         return m_astContext.getSourceManager().isInMainFile(declaration->getBeginLoc());
+    }
+
+    std::string getFileName(CXXRecordDecl* declaration)
+    {
+        return m_astContext.getSourceManager().getFilename(declaration->getBeginLoc());
+    }
+
+    std::string streamToString(std::ifstream& in)
+    {
+        std::stringstream sstr;
+        sstr << in.rdbuf();
+        return sstr.str();
     }
 
   private:
