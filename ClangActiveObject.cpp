@@ -39,26 +39,49 @@ class FindInterfaceRecursiveASTVisitor
                 auto interfaceName = m_interfaceName;
                 auto interfaceImplName = m_interfaceName + "ActiveObject";
 
-                mstch::array context{ { mstch::map{
-                    { "InterfaceHeaderFileName", getFileName(declaration) },
-                    { "InterfaceName", m_interfaceName },
-                    { "InterfaceImplName", m_interfaceName + "ActiveObject" } } } };
-
                 mstch::array methods;
 
                 auto begin = declaration->method_begin();
                 auto end = declaration->method_end();
                 for (auto methodIt = begin; methodIt != end; methodIt++) {
                     if (methodIt->isUserProvided() && methodIt->isPure()) {
-                        methods.push_back(mstch::array{
-                            mstch::map{
-                                { "Signature", std::string{ "void foo(int a) override" } } },
-                            mstch::map{ { "Parameters", std::string{ "a" } } },
-                            mstch::map{ { "FunctionCall", std::string{ "foo(a)" } } } });
+                        auto methodName = methodIt->getQualifiedNameAsString();
+                        auto returnTypeName = methodIt->getReturnType().getAsString();
+                        auto parameters = std::string("");
+                        auto parametersWithType = std::string("");
+
+                        auto parametersBegin = methodIt->param_begin();
+                        auto parametersEnd = methodIt->param_end();
+
+                        for (auto parameterIt = parametersBegin; parameterIt != parametersEnd;
+                             parameterIt++) {
+                            auto parameter = *parameterIt;
+
+                            auto typeName = QualType::getAsString(
+                                parameter->getType().split(), PrintingPolicy{ {} });
+                            auto parameterName = (*parameterIt)->getQualifiedNameAsString();
+                            parameters += parameterName + ",";
+                            parametersWithType += typeName + " " + parameterName + ",";
+                        }
+
+                        auto signature
+                            = returnTypeName + " " + methodName + "(" + parametersWithType + ")";
+                        auto functionCall = methodName + "(" + parameters + ")";
+                        methods.push_back(mstch::map{ { "Signature", signature },
+                                                      { "Parameters", parameters },
+                                                      { "FunctionCall", functionCall } });
                     }
                 }
 
-                context.push_back(mstch::map{ { "Methods", methods } });
+                mstch::map context{
+                    { "Includes",
+                      mstch::map{ { "InterfaceHeaderFileName", getFileName(declaration) } } },
+                    { "Class",
+                      mstch::map{ { "InterfaceName", m_interfaceName },
+                                  { "InterfaceImplName", m_interfaceName + "ActiveObject" } } },
+                    { "Methods", methods }
+                };
+
                 std::cout << mstch::render(activeObjectTemplate, context) << std::endl;
             }
         }
