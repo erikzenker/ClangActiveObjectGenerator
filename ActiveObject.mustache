@@ -9,6 +9,7 @@
 #include <boost/asio/io_service.hpp>
 #include <memory>
 {{/Includes}}
+
 {{#Class}}
 class {{InterfaceImplName}} : public {{InterfaceName}} {
 public:
@@ -19,7 +20,8 @@ public:
   }
 
 public: // {{InterfaceName}}
-    {{#Methods}}{{Signature}} override {
+    {{#Methods}}
+    {{Signature}} override {
         m_ioService.post(
             [this, {{Parameters}}](){
                 m_impl.lock()->{{FunctionCall}};

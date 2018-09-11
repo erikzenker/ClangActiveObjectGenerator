@@ -35,43 +35,8 @@ class FindInterfaceRecursiveASTVisitor
                     = std::ifstream("ActiveObject.mustache", std::ios::in);
                 auto activeObjectTemplate = streamToString(activeObjectTemplateStream);
 
-                auto interfaceHeaderFileName = getFileName(declaration);
                 auto interfaceName = m_interfaceName;
                 auto interfaceImplName = m_interfaceName + "ActiveObject";
-
-                mstch::array methods;
-
-                auto begin = declaration->method_begin();
-                auto end = declaration->method_end();
-                for (auto methodIt = begin; methodIt != end; methodIt++) {
-                    if (methodIt->isUserProvided() && methodIt->isPure()) {
-                        auto methodName = methodIt->getQualifiedNameAsString();
-                        auto returnTypeName = methodIt->getReturnType().getAsString();
-                        auto parameters = std::string("");
-                        auto parametersWithType = std::string("");
-
-                        auto parametersBegin = methodIt->param_begin();
-                        auto parametersEnd = methodIt->param_end();
-
-                        for (auto parameterIt = parametersBegin; parameterIt != parametersEnd;
-                             parameterIt++) {
-                            auto parameter = *parameterIt;
-
-                            auto typeName = QualType::getAsString(
-                                parameter->getType().split(), PrintingPolicy{ {} });
-                            auto parameterName = (*parameterIt)->getQualifiedNameAsString();
-                            parameters += parameterName + ",";
-                            parametersWithType += typeName + " " + parameterName + ",";
-                        }
-
-                        auto signature
-                            = returnTypeName + " " + methodName + "(" + parametersWithType + ")";
-                        auto functionCall = methodName + "(" + parameters + ")";
-                        methods.push_back(mstch::map{ { "Signature", signature },
-                                                      { "Parameters", parameters },
-                                                      { "FunctionCall", functionCall } });
-                    }
-                }
 
                 mstch::map context{
                     { "Includes",
@@ -79,8 +44,10 @@ class FindInterfaceRecursiveASTVisitor
                     { "Class",
                       mstch::map{ { "InterfaceName", m_interfaceName },
                                   { "InterfaceImplName", m_interfaceName + "ActiveObject" } } },
-                    { "Methods", methods }
+                    { "Methods", extractMethods(declaration) }
                 };
+
+                mstch::config::escape = [](const std::string& str) -> std::string { return str; };
 
                 std::cout << mstch::render(activeObjectTemplate, context) << std::endl;
             }
@@ -89,6 +56,45 @@ class FindInterfaceRecursiveASTVisitor
     }
 
   private:
+    mstch::array extractMethods(const CXXRecordDecl* declaration) const
+    {
+        mstch::array methods;
+        auto begin = declaration->method_begin();
+        auto end = declaration->method_end();
+        for (auto methodIt = begin; methodIt != end; methodIt++) {
+            if (methodIt->isUserProvided() && methodIt->isPure()) {
+                auto methodName = methodIt->getQualifiedNameAsString();
+                auto returnTypeName = methodIt->getReturnType().getAsString();
+                auto parameters = std::__cxx11::string("");
+                auto parametersWithType = std::__cxx11::string("");
+
+                auto parametersBegin = methodIt->param_begin();
+                auto parametersEnd = methodIt->param_end();
+
+                for (auto parameterIt = parametersBegin; parameterIt != parametersEnd;
+                     parameterIt++) {
+                    auto parameter = *parameterIt;
+
+                    auto printingPolicy = PrintingPolicy{ {} };
+                    printingPolicy.adjustForCPlusPlus();
+
+                    auto typeName
+                        = QualType::getAsString(parameter->getType().split(), printingPolicy);
+                    auto parameterName = (*parameterIt)->getQualifiedNameAsString();
+                    parameters += parameterName + ",";
+                    parametersWithType += typeName + " " + parameterName + ",";
+                }
+
+                auto signature = returnTypeName + " " + methodName + "(" + parametersWithType + ")";
+                auto functionCall = methodName + "(" + parameters + ")";
+                methods.push_back(mstch::map{ { "Signature", signature },
+                                              { "Parameters", parameters },
+                                              { "FunctionCall", functionCall } });
+            }
+        }
+        return methods;
+    }
+
     bool isInMainFile(CXXRecordDecl* declaration)
     {
         return m_astContext.getSourceManager().isInMainFile(declaration->getBeginLoc());
@@ -96,7 +102,7 @@ class FindInterfaceRecursiveASTVisitor
 
     std::string getFileName(CXXRecordDecl* declaration)
     {
-        return m_astContext.getSourceManager().getFilename(declaration->getBeginLoc());
+        return m_astContext.getSourceManager().getFilename(declaration->getBeginLoc()).str();
     }
 
     std::string streamToString(std::ifstream& in)
