@@ -6,6 +6,8 @@
 
 #include "ICalculator.h"
 #include "ICalculatorActiveObject.h"
+#include "IResultObserver.h"
+#include "IResultObserverActiveObject.h"
 #include "MakeActiveObject.h"
 
 #include <boost/asio.hpp>
@@ -18,6 +20,11 @@ class SimpleCalculator : public ICalculator {
     void add(std::size_t a, std::size_t b, IResultObserver* resultObserver) override
     {
         resultObserver->observe(a + b);
+    }
+
+    void mul(std::size_t a, std::size_t b, IResultObserver *resultObserver) override
+    {
+        resultObserver->observe(a * b);
     }
 };
 

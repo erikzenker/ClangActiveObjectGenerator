@@ -1,14 +1,7 @@
 #! /bin/bash
 
-DIR_NAME=`dirname $1`
-FILE_NAME=`basename $1`
-#FILE_NAME=$1
-
-echo $DIR_NAME
-echo $FILE_NAME
-
-cd $DIR_NAME
-pwd
+FILE_NAME=$1
+INTERFACE_NAME=$2
 
 /home/erik/projects/llvm/cmake-build-debug/bin/clang++ \
  -D_GNU_SOURCE -D_DEBUG -D__STDC_CONSTANT_MACROS \
@@ -16,4 +9,5 @@ pwd
  -fsyntax-only \
  -Xclang -load -Xclang /home/erik/projects/llvm/cmake-build-debug/lib/ClangActiveObject.so \
  -Xclang -plugin -Xclang clang-active-object \
- $FILE_NAME
+ -Xclang -plugin-arg-clang-active-object -Xclang ${INTERFACE_NAME} \
+ ${FILE_NAME}

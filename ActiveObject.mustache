@@ -34,4 +34,11 @@ private:
    std::weak_ptr<{{InterfaceName}}> m_impl;
    boost::asio::io_service& m_ioService;
 };
+
+template <>
+std::unique_ptr<{{InterfaceName}}> make_active_object<{{InterfaceName}}, boost::asio::io_service>(
+        const std::shared_ptr<{{InterfaceName}}>& impl, boost::asio::io_service& ioService)
+{
+    return std::make_unique<{{InterfaceImplName}}>(impl, ioService);
+}
 {{/Class}}

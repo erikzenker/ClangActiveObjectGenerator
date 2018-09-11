@@ -1,13 +1,10 @@
 #pragma once
 
+#include "IResultObserver.h"
+
 #include <cstddef>
 #include <memory>
 
-class IResultObserver{
-public:
-    virtual ~IResultObserver() = default;
-    virtual void observe(std::size_t result) = 0;
-};
 
 class ICalculator {
 public:

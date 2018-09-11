@@ -19,7 +19,7 @@ class FindInterfaceRecursiveASTVisitor
     : public RecursiveASTVisitor<FindInterfaceRecursiveASTVisitor> {
   public:
     FindInterfaceRecursiveASTVisitor(
-        CompilerInstance& compilerInstance, std::string&& interfaceName)
+        CompilerInstance& compilerInstance, const std::string& interfaceName)
         : m_compilerInstance(compilerInstance)
         , m_astContext(m_compilerInstance.getASTContext())
         , m_interfaceName(interfaceName)
@@ -40,7 +40,8 @@ class FindInterfaceRecursiveASTVisitor
 
                 mstch::map context{
                     { "Includes",
-                      mstch::map{ { "InterfaceHeaderFileName", getFileName(declaration) } } },
+                      mstch::map{ { "InterfaceHeaderFileName",
+                                    dropPathDirectory(getFileName(declaration)) } } },
                     { "Class",
                       mstch::map{ { "InterfaceName", m_interfaceName },
                                   { "InterfaceImplName", m_interfaceName + "ActiveObject" } } },
@@ -63,7 +64,7 @@ class FindInterfaceRecursiveASTVisitor
         auto end = declaration->method_end();
         for (auto methodIt = begin; methodIt != end; methodIt++) {
             if (methodIt->isUserProvided() && methodIt->isPure()) {
-                auto methodName = methodIt->getQualifiedNameAsString();
+                auto methodName = dropClassPrefix(methodIt->getQualifiedNameAsString());
                 auto returnTypeName = methodIt->getReturnType().getAsString();
                 auto parameters = std::__cxx11::string("");
                 auto parametersWithType = std::__cxx11::string("");
@@ -81,35 +82,76 @@ class FindInterfaceRecursiveASTVisitor
                     auto typeName
                         = QualType::getAsString(parameter->getType().split(), printingPolicy);
                     auto parameterName = (*parameterIt)->getQualifiedNameAsString();
-                    parameters += parameterName + ",";
-                    parametersWithType += typeName + " " + parameterName + ",";
+                    parameters += parameterName + ", ";
+                    parametersWithType += typeName + " " + parameterName + ", ";
                 }
 
-                auto signature = returnTypeName + " " + methodName + "(" + parametersWithType + ")";
-                auto functionCall = methodName + "(" + parameters + ")";
+                auto signature = returnTypeName + " " + methodName + "("
+                    + removeTrailingComma(parametersWithType) + ")";
+                auto functionCall = methodName + "(" + removeTrailingComma(parameters) + ")";
+
                 methods.push_back(mstch::map{ { "Signature", signature },
-                                              { "Parameters", parameters },
+                                              { "Parameters", removeTrailingComma(parameters) },
                                               { "FunctionCall", functionCall } });
             }
         }
         return methods;
     }
 
-    bool isInMainFile(CXXRecordDecl* declaration)
+    bool isInMainFile(CXXRecordDecl* declaration) const
     {
         return m_astContext.getSourceManager().isInMainFile(declaration->getBeginLoc());
     }
 
-    std::string getFileName(CXXRecordDecl* declaration)
+    std::string getFileName(CXXRecordDecl* declaration) const
     {
         return m_astContext.getSourceManager().getFilename(declaration->getBeginLoc()).str();
     }
 
-    std::string streamToString(std::ifstream& in)
+    std::string streamToString(std::ifstream& in) const
     {
         std::stringstream sstr;
         sstr << in.rdbuf();
         return sstr.str();
+    }
+
+    std::string dropClassPrefix(const std::string& withClassPrefix) const
+    {
+        std::string separator = "::";
+
+        auto pos = withClassPrefix.find(separator);
+
+        if (pos == std::string::npos) {
+            return withClassPrefix;
+        }
+
+        return withClassPrefix.substr(pos + separator.size());
+    }
+
+    std::string removeTrailingComma(const std::string& withTrailingComma) const
+    {
+        std::string comma = ",";
+
+        auto pos = withTrailingComma.rfind(comma);
+
+        if (pos == std::string::npos) {
+            return withTrailingComma;
+        }
+
+        return withTrailingComma.substr(0, pos);
+    }
+
+    std::string dropPathDirectory(const std::string& pathWithDirectory) const
+    {
+        std::string separator = "/";
+
+        auto pos = pathWithDirectory.rfind(separator);
+
+        if (pos == std::string::npos) {
+            return pathWithDirectory;
+        }
+
+        return pathWithDirectory.substr(pos + separator.size());
     }
 
   private:
@@ -120,9 +162,9 @@ class FindInterfaceRecursiveASTVisitor
 
 class MyASTConsumer : public ASTConsumer {
   public:
-    explicit MyASTConsumer(CompilerInstance& compilerInstance)
+    explicit MyASTConsumer(CompilerInstance& compilerInstance, const std::string& interfaceName)
         : m_compilerInstance(compilerInstance)
-        , m_interfaceVisitor(m_compilerInstance, "ICalculator")
+        , m_interfaceVisitor(m_compilerInstance, interfaceName)
     {
     }
 
@@ -146,13 +188,17 @@ class MyPluginASTAction : public PluginASTAction {
     std::unique_ptr<ASTConsumer>
     CreateASTConsumer(CompilerInstance& compilerInstance, llvm::StringRef) override
     {
-        return llvm::make_unique<MyASTConsumer>(compilerInstance);
+        return llvm::make_unique<MyASTConsumer>(compilerInstance, m_interfaceName);
     }
 
-    bool ParseArgs(const CompilerInstance&, const std::vector<std::string>&) override
+    bool ParseArgs(const CompilerInstance&, const std::vector<std::string>& args) override
     {
+        m_interfaceName = args[0];
         return true;
     }
+
+  private:
+    std::string m_interfaceName;
 };
 
 } // namespace
