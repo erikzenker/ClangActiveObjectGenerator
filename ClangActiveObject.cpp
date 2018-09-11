@@ -29,30 +29,24 @@ class FindInterfaceRecursiveASTVisitor
   public: // RecursiveASTVisitor
     bool VisitCXXRecordDecl(CXXRecordDecl* declaration)
     {
-        if (isInMainFile(declaration)) {
-            if (declaration->getQualifiedNameAsString() == m_interfaceName) {
-                auto activeObjectTemplateStream
-                    = std::ifstream("ActiveObject.mustache", std::ios::in);
-                auto activeObjectTemplate = streamToString(activeObjectTemplateStream);
+        if (isInMainFile(declaration) && hasInterface(declaration, m_interfaceName)) {
+            mstch::map context{ { "Includes",
+                                  mstch::map{ { "InterfaceHeaderFileName",
+                                                dropPathDirectory(getFileName(declaration)) } } },
+                                { "Class",
+                                  mstch::map{
+                                      { "InterfaceName", m_interfaceName },
+                                      { "InterfaceImplName", m_interfaceName + "ActiveObject" } } },
+                                { "Methods", extractMethods(declaration) } };
 
-                auto interfaceName = m_interfaceName;
-                auto interfaceImplName = m_interfaceName + "ActiveObject";
+            mstch::config::escape = [](const std::string& str) -> std::string { return str; };
 
-                mstch::map context{
-                    { "Includes",
-                      mstch::map{ { "InterfaceHeaderFileName",
-                                    dropPathDirectory(getFileName(declaration)) } } },
-                    { "Class",
-                      mstch::map{ { "InterfaceName", m_interfaceName },
-                                  { "InterfaceImplName", m_interfaceName + "ActiveObject" } } },
-                    { "Methods", extractMethods(declaration) }
-                };
-
-                mstch::config::escape = [](const std::string& str) -> std::string { return str; };
-
-                std::cout << mstch::render(activeObjectTemplate, context) << std::endl;
-            }
+            auto activeObjectTemplateStream = std::ifstream("ActiveObject.mustache", std::ios::in);
+            auto activeObjectTemplate = streamToString(activeObjectTemplateStream);
+            std::cout << mstch::render(activeObjectTemplate, context) << std::endl;
+            return false;
         }
+
         return true;
     }
 
@@ -101,6 +95,11 @@ class FindInterfaceRecursiveASTVisitor
     bool isInMainFile(CXXRecordDecl* declaration) const
     {
         return m_astContext.getSourceManager().isInMainFile(declaration->getBeginLoc());
+    }
+
+    bool hasInterface(CXXRecordDecl* declaration, const std::string& interfaceName) const
+    {
+        return declaration->getQualifiedNameAsString() == interfaceName;
     }
 
     std::string getFileName(CXXRecordDecl* declaration) const
