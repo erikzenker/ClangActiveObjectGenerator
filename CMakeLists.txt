@@ -1,22 +1,18 @@
-# If we don't need RTTI or EH, there's no reason to export anything
-# from the plugin.
-if( NOT MSVC ) # MSVC mangles symbols differently, and
-               # LearnClangAst.export contains C++ symbols.
-  if( NOT LLVM_REQUIRES_RTTI )
-    if( NOT LLVM_REQUIRES_EH )
-      set(LLVM_EXPORTED_SYMBOL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/ClangActiveObject.exports)
-    endif()
-  endif()
-endif()
+cmake_minimum_required(VERSION 3.2.2)
+project(clang_active_object)
+set (CMAKE_CXX_STANDARD 14)
 
-add_llvm_loadable_module(ClangActiveObject ClangActiveObject.cpp PLUGIN_TOOL clang)
-
+# Add mstch dependency
 add_subdirectory(external/mstch)
 include_directories(${mstch_INCLUDE_DIR})
-target_link_libraries(ClangActiveObject mstch)
+
+# Add clang plugin
+add_llvm_loadable_module(clang_active_object ClangActiveObject.cpp PLUGIN_TOOL clang)
+target_compile_options(clang_active_object PRIVATE -fexceptions)
+target_link_libraries(clang_active_object mstch)
 
 if(LLVM_ENABLE_PLUGINS AND (WIN32 OR CYGWIN))
-  target_link_libraries(ClangActiveObject PRIVATE
+  target_link_libraries(clang_active_object PRIVATE
     clangAST
     clangBasic
     clangFrontend
@@ -24,4 +20,5 @@ if(LLVM_ENABLE_PLUGINS AND (WIN32 OR CYGWIN))
     )
 endif()
 
+# Example
 add_subdirectory(example)

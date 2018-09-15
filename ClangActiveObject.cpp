@@ -8,6 +8,9 @@
 
 #include <mstch/mstch.hpp>
 
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -19,10 +22,13 @@ class FindInterfaceRecursiveASTVisitor
     : public RecursiveASTVisitor<FindInterfaceRecursiveASTVisitor> {
   public:
     FindInterfaceRecursiveASTVisitor(
-        CompilerInstance& compilerInstance, const std::string& interfaceName)
+        CompilerInstance& compilerInstance,
+        const std::string& interfaceName,
+        const boost::filesystem::path& activeObjectTemplate)
         : m_compilerInstance(compilerInstance)
         , m_astContext(m_compilerInstance.getASTContext())
         , m_interfaceName(interfaceName)
+        , m_activeObjectTemplate(activeObjectTemplate)
     {
     }
 
@@ -41,10 +47,14 @@ class FindInterfaceRecursiveASTVisitor
 
             mstch::config::escape = [](const std::string& str) -> std::string { return str; };
 
-            auto activeObjectTemplateStream = std::ifstream("ActiveObject.mustache", std::ios::in);
+
+            boost::filesystem::ifstream activeObjectTemplateStream{m_activeObjectTemplate};
             auto activeObjectTemplate = streamToString(activeObjectTemplateStream);
             std::cout << mstch::render(activeObjectTemplate, context) << std::endl;
             return false;
+        } else if (isInMainFile(declaration)) {
+            std::cerr << "Found declaration with different interface name" << std::endl;
+            declaration->dump();
         }
 
         return true;
@@ -107,7 +117,7 @@ class FindInterfaceRecursiveASTVisitor
         return m_astContext.getSourceManager().getFilename(declaration->getBeginLoc()).str();
     }
 
-    std::string streamToString(std::ifstream& in) const
+    std::string streamToString(boost::filesystem::ifstream& in) const
     {
         std::stringstream sstr;
         sstr << in.rdbuf();
@@ -157,13 +167,17 @@ class FindInterfaceRecursiveASTVisitor
     CompilerInstance& m_compilerInstance;
     ASTContext& m_astContext;
     const std::string m_interfaceName;
+    const boost::filesystem::path m_activeObjectTemplate;
 };
 
 class MyASTConsumer : public ASTConsumer {
   public:
-    explicit MyASTConsumer(CompilerInstance& compilerInstance, const std::string& interfaceName)
+    explicit MyASTConsumer(
+        CompilerInstance& compilerInstance,
+        const std::string& interfaceName,
+        const boost::filesystem::path& activeObjectTemplate)
         : m_compilerInstance(compilerInstance)
-        , m_interfaceVisitor(m_compilerInstance, interfaceName)
+        , m_interfaceVisitor(m_compilerInstance, interfaceName, activeObjectTemplate)
     {
     }
 
@@ -187,20 +201,23 @@ class MyPluginASTAction : public PluginASTAction {
     std::unique_ptr<ASTConsumer>
     CreateASTConsumer(CompilerInstance& compilerInstance, llvm::StringRef) override
     {
-        return llvm::make_unique<MyASTConsumer>(compilerInstance, m_interfaceName);
+        return llvm::make_unique<MyASTConsumer>(
+            compilerInstance, m_interfaceName, m_activeObjectTemplate);
     }
 
     bool ParseArgs(const CompilerInstance&, const std::vector<std::string>& args) override
     {
         m_interfaceName = args[0];
+        m_activeObjectTemplate = boost::filesystem::path(args[1]);
         return true;
     }
 
   private:
     std::string m_interfaceName;
+    boost::filesystem::path m_activeObjectTemplate;
 };
 
 } // namespace
 
 static FrontendPluginRegistry::Add<MyPluginASTAction>
-    X("clang-active-object", "generate active object from interface");
+    X("clang_active_object", "generate active object from interface");
