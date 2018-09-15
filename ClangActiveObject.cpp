@@ -1,10 +1,10 @@
-#include "clang/AST/AST.h"
-#include "clang/AST/ASTConsumer.h"
-#include "clang/AST/RecursiveASTVisitor.h"
-#include "clang/Frontend/CompilerInstance.h"
-#include "clang/Frontend/FrontendPluginRegistry.h"
-#include "clang/Sema/Sema.h"
-#include "llvm/Support/raw_ostream.h"
+#include <clang/AST/AST.h>
+#include <clang/AST/ASTConsumer.h>
+#include <clang/AST/RecursiveASTVisitor.h>
+#include <clang/Frontend/CompilerInstance.h>
+#include <clang/Frontend/FrontendPluginRegistry.h>
+#include <clang/Sema/Sema.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include <mstch/mstch.hpp>
 
@@ -104,7 +104,7 @@ class FindInterfaceRecursiveASTVisitor
 
     bool isInMainFile(CXXRecordDecl* declaration) const
     {
-        return m_astContext.getSourceManager().isInMainFile(declaration->getBeginLoc());
+        return m_astContext.getSourceManager().isInMainFile(declaration->getLocStart());
     }
 
     bool hasInterface(CXXRecordDecl* declaration, const std::string& interfaceName) const
@@ -114,7 +114,7 @@ class FindInterfaceRecursiveASTVisitor
 
     std::string getFileName(CXXRecordDecl* declaration) const
     {
-        return m_astContext.getSourceManager().getFilename(declaration->getBeginLoc()).str();
+        return m_astContext.getSourceManager().getFilename(declaration->getLocStart()).str();
     }
 
     std::string streamToString(boost::filesystem::ifstream& in) const
