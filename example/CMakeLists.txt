@@ -1,5 +1,19 @@
 cmake_minimum_required(VERSION 3.2.2)
-project(clang_active_object_example)
+project(clang_active_object_generator_example)
+
+# Generate the active objects
+execute_process (
+    COMMAND bash -c "../clang-active-object-generator.sh \
+                        ${CMAKE_CURRENT_SOURCE_DIR}/ICalculator.h ICalculator \
+                      > ${CMAKE_CURRENT_SOURCE_DIR}/ICalculatorActiveObject.h"
+    OUTPUT_VARIABLE ICalculatorGeneratorOutput
+)
+execute_process (
+    COMMAND bash -c "../clang-active-object-generator.sh \
+                         ${CMAKE_CURRENT_SOURCE_DIR}/IResultObserver.h IResultObserver \
+                       > ${CMAKE_CURRENT_SOURCE_DIR}/IResultObserverActiveObject.h"
+    OUTPUT_VARIABLE IResultObserverGeneratorOutput
+)
 
 # Add boost dependency
 find_package(
@@ -13,8 +27,8 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 find_package(Threads)
 
 # Add example
-add_executable(clang_active_object_example main.cpp)
-target_link_libraries(clang_active_object_example PRIVATE
+add_executable(clang_active_object_generator_example main.cpp)
+target_link_libraries(clang_active_object_generator_example PRIVATE
         ${Boost_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT}
 )

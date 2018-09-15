@@ -108,10 +108,25 @@ print a generated interface implementation using the active object pattern to st
 
 Build Plugin
 =============
+```bash
+mkdir build; cd build
+cmake ..
+cmake --build clang_active_object_generator
+```
 
+Build Example
+=============
+Build the plugin in advance
+```bash
+mkdir build; cd build
+cmake ..
+cmake --build clang_active_object_generator_example
+./example/clang_active_object_generator_example
+```
 
 Dependencies
 ============
+* C++14
 
 License
 =======
