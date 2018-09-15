@@ -1,9 +1,3 @@
-/*
- *
- *
- * Build: clang++ main.cpp -lboost_system -lpthread
- */
-
 #include "ICalculator.hpp"
 #include "ICalculatorActiveObject.hpp"
 #include "IResultObserver.hpp"

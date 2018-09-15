@@ -26,3 +26,6 @@ target_link_libraries(clang_active_object_generator PRIVATE
 
 # Example
 add_subdirectory(example)
+
+# Test
+add_subdirectory(test)

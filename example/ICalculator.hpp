@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IResultObserver.h"
+#include "IResultObserver.hpp"
 
 #include <cstddef>
 #include <memory>
