@@ -8,7 +8,6 @@
 #include "ICalculatorActiveObject.h"
 #include "IResultObserver.h"
 #include "IResultObserverActiveObject.h"
-#include "MakeActiveObject.h"
 
 #include <boost/asio.hpp>
 #include <future>

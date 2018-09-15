@@ -9,7 +9,7 @@
 # Generate the active objects
 for INTERFACE in `ls ./interfaces/`
 do
-    ././../../clang-active-object.sh ./interfaces/$INTERFACE ISimpleClass > ./activeObjects/$INTERFACE
+    ../../clang-active-object-generator.sh ./interfaces/$INTERFACE ISimpleClass > ./activeObjects/$INTERFACE
 done
 
 # Compare active objects to references
