@@ -9,6 +9,7 @@ in their own thread of control.
 
 Usage
 =====
+1. Install the clang active object generator (see [Build Plugin](#Build-Plugin))
 1. You need a header file with a pure virtual class inside e.g.: IPureVirtualClass.hpp.
     ```c++
     #pragma once
@@ -105,13 +106,12 @@ print a generated interface implementation using the active object pattern to st
         return 0;
     }
     ```
-
 Build Plugin
 =============
 ```bash
 mkdir build; cd build
 cmake ..
-cmake --build clang_active_object_generator
+cmake --build . --target install
 ```
 
 Build Example
@@ -120,13 +120,15 @@ Build the plugin in advance
 ```bash
 mkdir build; cd build
 cmake ..
-cmake --build clang_active_object_generator_example
+cmake --build . --target clang_active_object_generator_example
 ./example/clang_active_object_generator_example
 ```
 
 Dependencies
 ============
 * C++14
+* llvm 6.0.1-4
+* clang 6.0.1-2
 
 License
 =======

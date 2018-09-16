@@ -2,10 +2,13 @@ cmake_minimum_required(VERSION 3.2.2)
 project(clang_active_object_generator)
 set (CMAKE_CXX_STANDARD 14)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/")
+set(LIB_NAME clang_active_object_generator)
+
+# Add clang plugin target
+add_library(${LIB_NAME} SHARED ClangActiveObject.cpp)
 
 # Add mstch dependency
 add_subdirectory(external/mstch)
-include_directories(${mstch_INCLUDE_DIR})
 
 # Add libclang dependecy
 find_package(
@@ -13,19 +16,37 @@ find_package(
         MODULE
         REQUIRED
 )
-include_directories(SYSTEM ${LibClang_INCLUDE_DIRS})
 
-# Add clang plugin
-add_library(clang_active_object_generator SHARED ClangActiveObject.cpp)
+target_include_directories(${LIB_NAME} PUBLIC
+        ${mstch_INCLUDE_DIR}
+        ${LibClang_INCLUDE_DIRS}
+)
 
-target_compile_options(clang_active_object_generator PRIVATE -fexceptions)
-target_link_libraries(clang_active_object_generator PRIVATE
-        mstch
-        ${LIBCLANG_LIBRARIES}
-        )
+target_compile_options(${LIB_NAME} PRIVATE -fexceptions)
+target_link_libraries(${LIB_NAME} PRIVATE
+    mstch
+    ${LIBCLANG_LIBRARIES}
+)
 
-# Example
-add_subdirectory(example)
+# Add install target
+install(
+    TARGETS ${LIB_NAME}
+    LIBRARY DESTINATION lib
+)
 
-# Test
-add_subdirectory(test)
+install(
+    FILES clang-active-object-generator
+    PERMISSIONS WORLD_EXECUTE WORLD_WRITE WORLD_READ
+    DESTINATION bin
+)
+
+install(
+    FILES ActiveObject.mustache
+    DESTINATION share/clang-active-object-generator
+)
+
+# Add examples
+# add_subdirectory(example)
+
+# Add tests
+# add_subdirectory(test)
