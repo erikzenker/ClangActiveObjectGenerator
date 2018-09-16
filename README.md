@@ -38,7 +38,6 @@ print a generated interface implementation using the active object pattern to st
      */
     
     #include "IPureVirtualClass.hpp"
-    #include "MakeActiveObject.h"
     #include <boost/asio/io_service.hpp>
     #include <memory>
     
@@ -64,6 +63,10 @@ print a generated interface implementation using the active object pattern to st
        boost::asio::io_service& m_ioService;
     };
     
+    template <class TInterface, class TExecutor>
+    std::unique_ptr<TInterface>
+    make_active_object(const std::shared_ptr<TInterface>& impl, TExecutor& executor);
+    
     template <>
     std::unique_ptr<IPureVirtualClass> make_active_object<IPureVirtualClass, boost::asio::io_service>(
             const std::shared_ptr<IPureVirtualClass>& impl, boost::asio::io_service& ioService)
@@ -71,7 +74,7 @@ print a generated interface implementation using the active object pattern to st
         return std::make_unique<IPureVirtualClassActiveObject>(impl, ioService);
     }
     ```
-4. Finally, you include the generated active object header into your sources:
+4. Finally, include the generated active object header into your sources and call methods on the active object
     ```c++
     #include "IPureVirtualClass.hpp"             // <-- original interface header
     #include "IPureVirtualClassActiveObject.hpp" // <-- generated active object header
