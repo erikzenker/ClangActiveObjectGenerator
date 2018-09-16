@@ -1,0 +1,32 @@
+@startuml
+
+class IPureVirtualClass {
+  +{abstract} void method()
+}
+
+class GeneratedActiveObject {
+  - threadLoop
+  +void method()
+}
+
+class Implementation {
+  +void method()
+}
+
+IPureVirtualClass <|-- GeneratedActiveObject
+IPureVirtualClass <|-- Implementation
+GeneratedActiveObject "many" *-- "1" Implementation
+
+note top of GeneratedActiveObject
+   The active object delegates its method
+   calls to the implementation through its
+   thread loop.
+end note
+
+note right of Implementation
+  The actual implementation of the
+  interface, which will get method
+  calls through the thread loop.
+end note
+
+@enduml

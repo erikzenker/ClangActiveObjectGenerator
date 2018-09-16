@@ -6,6 +6,7 @@ from a pure virtual class. An [active object](https://en.wikipedia.org/wiki/Acti
 pattern which decouples method execution from method invocation for objects that each reside 
 in their own thread of control.
 
+![active object](doc/activeObject.svg)
 
 Usage
 =====
