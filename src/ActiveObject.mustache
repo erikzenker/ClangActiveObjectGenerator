@@ -5,7 +5,6 @@
 
 {{#Includes}}
 #include "{{InterfaceHeaderFileName}}"
-#include <boost/asio/io_service.hpp>
 #include <memory>
 {{/Includes}}
 
@@ -35,14 +34,24 @@ private:
    TExecutor& m_executor;
 };
 
+#ifndef MAKE_ACTIVE_OBJECT
+#define MAKE_ACTIVE_OBJECT
+template <class TInterface, class TExecutor>
+class MakeActiveObject {};
+
 template <class TInterface, class TExecutor>
 std::unique_ptr<TInterface>
-make_active_object(const std::shared_ptr<TInterface>& impl, TExecutor& executor);
-
-template <>
-std::unique_ptr<{{InterfaceName}}> make_active_object<{{InterfaceName}}, boost::asio::io_service>(
-        const std::shared_ptr<{{InterfaceName}}>& impl, boost::asio::io_service& ioService)
+make_active_object(const std::shared_ptr<TInterface>& impl, TExecutor& executor)
 {
-    return std::make_unique<{{InterfaceImplName}}<boost::asio::io_service>>(impl, ioService);
+    return MakeActiveObject<TInterface, TExecutor>{}(impl, executor);
 }
+#endif
+
+template <class TExecutor>
+class MakeActiveObject<{{InterfaceName}}, TExecutor> {
+public:
+    std::unique_ptr<{{InterfaceName}}> operator()(const std::shared_ptr<{{InterfaceName}}>& impl, TExecutor& executor){
+            return std::make_unique<{{InterfaceImplName}}<TExecutor>>(impl, executor);
+    }
+};
 {{/Class}}
