@@ -12,7 +12,7 @@
 template <class TExecutor>
 class {{InterfaceImplName}} : public {{InterfaceName}} {
 public:
-  {{InterfaceImplName}}(const std::shared_ptr<{{InterfaceName}}>& impl, TExecutor& executor)
+  {{InterfaceImplName}}(const std::shared_ptr<{{InterfaceName}}>& impl, const std::shared_ptr<TExecutor>& executor)
       : m_impl(impl)
       , m_executor(executor)
   {
@@ -21,7 +21,7 @@ public:
 public: // {{InterfaceName}}
     {{#Methods}}
     {{Signature}} override {
-        m_executor.post(
+        m_executor->post(
             [this, {{Parameters}}](){
                 m_impl.lock()->{{FunctionCall}};
             });
@@ -31,7 +31,7 @@ public: // {{InterfaceName}}
 
 private:
    std::weak_ptr<{{InterfaceName}}> m_impl;
-   TExecutor& m_executor;
+   std::shared_ptr<TExecutor> m_executor;
 };
 
 #ifndef MAKE_ACTIVE_OBJECT
@@ -41,7 +41,7 @@ class MakeActiveObject {};
 
 template <class TInterface, class TExecutor>
 std::unique_ptr<TInterface>
-make_active_object(const std::shared_ptr<TInterface>& impl, TExecutor& executor)
+make_active_object(const std::shared_ptr<TInterface>& impl, const std::shared_ptr<TExecutor>& executor)
 {
     return MakeActiveObject<TInterface, TExecutor>{}(impl, executor);
 }
@@ -50,7 +50,7 @@ make_active_object(const std::shared_ptr<TInterface>& impl, TExecutor& executor)
 template <class TExecutor>
 class MakeActiveObject<{{InterfaceName}}, TExecutor> {
 public:
-    std::unique_ptr<{{InterfaceName}}> operator()(const std::shared_ptr<{{InterfaceName}}>& impl, TExecutor& executor){
+    std::unique_ptr<{{InterfaceName}}> operator()(const std::shared_ptr<{{InterfaceName}}>& impl, const std::shared_ptr<TExecutor>& executor){
             return std::make_unique<{{InterfaceImplName}}<TExecutor>>(impl, executor);
     }
 };
