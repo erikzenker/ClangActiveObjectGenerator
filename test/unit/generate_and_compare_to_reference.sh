@@ -15,8 +15,7 @@ done
 # Compare active objects to references
 for ACTIVE_OBJECT in `ls ./activeObjects/`
 do
-    DIFF=`diff --color ./activeObjects/$ACTIVE_OBJECT ./activeObjectReferences/$ACTIVE_OBJECT`
+    diff --color -c ./activeObjects/$ACTIVE_OBJECT ./activeObjectReferences/$ACTIVE_OBJECT
     RETURN_CODE=$?
-    echo $DIFF
     if [ $RETURN_CODE = 1 ]; then exit 1; fi
 done

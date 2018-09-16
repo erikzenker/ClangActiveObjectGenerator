@@ -4,20 +4,20 @@
  */
 
 #include "ISimpleClass.hpp"
-#include <boost/asio/io_service.hpp>
 #include <memory>
 
+template <class TExecutor>
 class ISimpleClassActiveObject : public ISimpleClass {
 public:
-  ISimpleClassActiveObject(const std::shared_ptr<ISimpleClass>& impl, boost::asio::io_service& ioService)
+  ISimpleClassActiveObject(const std::shared_ptr<ISimpleClass>& impl, const std::shared_ptr<TExecutor>& executor)
       : m_impl(impl)
-      , m_ioService(ioService)
+      , m_executor(executor)
   {
   }
 
 public: // ISimpleClass
     void foo(int a) override {
-        m_ioService.post(
+        m_executor->post(
             [this, a](){
                 m_impl.lock()->foo(a);
             });
@@ -26,17 +26,27 @@ public: // ISimpleClass
 
 private:
    std::weak_ptr<ISimpleClass> m_impl;
-   boost::asio::io_service& m_ioService;
+   std::shared_ptr<TExecutor> m_executor;
 };
+
+#ifndef MAKE_ACTIVE_OBJECT
+#define MAKE_ACTIVE_OBJECT
+template <class TInterface, class TExecutor>
+class MakeActiveObject {};
 
 template <class TInterface, class TExecutor>
 std::unique_ptr<TInterface>
-make_active_object(const std::shared_ptr<TInterface>& impl, TExecutor& executor);
-
-template <>
-std::unique_ptr<ISimpleClass> make_active_object<ISimpleClass, boost::asio::io_service>(
-        const std::shared_ptr<ISimpleClass>& impl, boost::asio::io_service& ioService)
+make_active_object(const std::shared_ptr<TInterface>& impl, const std::shared_ptr<TExecutor>& executor)
 {
-    return std::make_unique<ISimpleClassActiveObject>(impl, ioService);
+    return MakeActiveObject<TInterface, TExecutor>{}(impl, executor);
 }
+#endif
+
+template <class TExecutor>
+class MakeActiveObject<ISimpleClass, TExecutor> {
+public:
+    std::unique_ptr<ISimpleClass> operator()(const std::shared_ptr<ISimpleClass>& impl, const std::shared_ptr<TExecutor>& executor){
+            return std::make_unique<ISimpleClassActiveObject<TExecutor>>(impl, executor);
+    }
+};
 
