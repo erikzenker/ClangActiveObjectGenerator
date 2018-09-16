@@ -9,7 +9,7 @@ in their own thread of control.
 
 Usage
 =====
-1. Install the clang active object generator (see [Build Plugin](#Build-Plugin))
+1. Install the clang active object generator (see [Build Plugin](#build-plugin))
 1. You need a header file with a pure virtual class inside e.g.: IPureVirtualClass.hpp.
     ```c++
     #pragma once
@@ -25,7 +25,7 @@ Usage
 print a generated interface implementation using the active object pattern to standard out.
     ```bash
     
-    ./clang-active-object-generator.sh IPureVirtualClass.hpp IPureVirtualClass \
+    clang-active-object-generator.sh IPureVirtualClass.hpp IPureVirtualClass \
         > IPureVirtualClassActiveObject.hpp
     
     ```
