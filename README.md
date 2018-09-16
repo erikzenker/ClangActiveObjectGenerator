@@ -63,16 +63,26 @@ print a generated interface implementation using the active object pattern to st
        boost::asio::io_service& m_ioService;
     };
     
+    #ifndef MAKE_ACTIVE_OBJECT
+    #define MAKE_ACTIVE_OBJECT
+    template <class TInterface, class TExecutor>
+    class MakeActiveObject {};
+    
     template <class TInterface, class TExecutor>
     std::unique_ptr<TInterface>
-    make_active_object(const std::shared_ptr<TInterface>& impl, TExecutor& executor);
-    
-    template <>
-    std::unique_ptr<IPureVirtualClass> make_active_object<IPureVirtualClass, boost::asio::io_service>(
-            const std::shared_ptr<IPureVirtualClass>& impl, boost::asio::io_service& ioService)
+    make_active_object(const std::shared_ptr<TInterface>& impl, const std::shared_ptr<TExecutor>& executor)
     {
-        return std::make_unique<IPureVirtualClassActiveObject>(impl, ioService);
+        return MakeActiveObject<TInterface, TExecutor>{}(impl, executor);
     }
+    #endif
+    
+    template <class TExecutor>
+    class MakeActiveObject<ICalculator, TExecutor> {
+    public:
+        std::unique_ptr<IPureVirtualClass> operator()(const std::shared_ptr<IPureVirtualClass>& impl, const std::shared_ptr<TExecutor>& executor){
+                return std::make_unique<IPureVirtualClassActiveObject<TExecutor>>(impl, executor);
+        }
+    };
     ```
 4. Finally, include the generated active object header into your sources and call methods on the active object
     ```c++
@@ -92,19 +102,19 @@ print a generated interface implementation using the active object pattern to st
     int main()
     {
         // Thread loop in which the active object method calls will be executed
-        boost::asio::io_service ioService0;
+        auto ioService = std::make_shared<boost::asio::io_service>();
      
         // The implementation of the interface
         auto impl = std::make_shared<Impl>();
         
         // Generates the active object 
-        auto implActiveObject = make_active_object<IPureVirtualClass>(impl, ioService0);
+        auto implActiveObject = make_active_object<IPureVirtualClass>(impl, ioService);
         
         // Puts the method call into the thread loop
         implActiveObject->foo(42);
     
         // Executes the method call (prints 42)
-        std::thread t0([&ioService0]() { ioService0.run(); });
+        std::thread t0([ioService]() { ioService->run(); });
         t0.join();
     
         return 0;
