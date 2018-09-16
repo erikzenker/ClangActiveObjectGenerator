@@ -12,4 +12,4 @@ endif ()
 
 add_custom_target(clang_active_object_generator_unit_tests
         SOURCES
-          ${PROJECT_SOURCE_DIR}/ActiveObject.mustache)
+        ../../src/ActiveObject.mustache)

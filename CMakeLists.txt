@@ -5,7 +5,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/mo
 set(LIB_NAME clang_active_object_generator)
 
 # Add clang plugin target
-add_library(${LIB_NAME} SHARED ClangActiveObject.cpp)
+add_library(${LIB_NAME} SHARED src/ClangActiveObject.cpp)
 
 # Add mstch dependency
 add_subdirectory(external/mstch)
@@ -35,13 +35,13 @@ install(
 )
 
 install(
-    FILES clang-active-object-generator
+    FILES src/clang-active-object-generator
     PERMISSIONS WORLD_EXECUTE WORLD_WRITE WORLD_READ
     DESTINATION bin
 )
 
 install(
-    FILES ActiveObject.mustache
+    FILES src/ActiveObject.mustache
     DESTINATION share/clang-active-object-generator
 )
 

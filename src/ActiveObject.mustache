@@ -10,18 +10,19 @@
 {{/Includes}}
 
 {{#Class}}
+template <class TExecutor>
 class {{InterfaceImplName}} : public {{InterfaceName}} {
 public:
-  {{InterfaceImplName}}(const std::shared_ptr<{{InterfaceName}}>& impl, boost::asio::io_service& ioService)
+  {{InterfaceImplName}}(const std::shared_ptr<{{InterfaceName}}>& impl, TExecutor& executor)
       : m_impl(impl)
-      , m_ioService(ioService)
+      , m_executor(executor)
   {
   }
 
 public: // {{InterfaceName}}
     {{#Methods}}
     {{Signature}} override {
-        m_ioService.post(
+        m_executor.post(
             [this, {{Parameters}}](){
                 m_impl.lock()->{{FunctionCall}};
             });
@@ -31,7 +32,7 @@ public: // {{InterfaceName}}
 
 private:
    std::weak_ptr<{{InterfaceName}}> m_impl;
-   boost::asio::io_service& m_ioService;
+   TExecutor& m_executor;
 };
 
 template <class TInterface, class TExecutor>
@@ -42,6 +43,6 @@ template <>
 std::unique_ptr<{{InterfaceName}}> make_active_object<{{InterfaceName}}, boost::asio::io_service>(
         const std::shared_ptr<{{InterfaceName}}>& impl, boost::asio::io_service& ioService)
 {
-    return std::make_unique<{{InterfaceImplName}}>(impl, ioService);
+    return std::make_unique<{{InterfaceImplName}}<boost::asio::io_service>>(impl, ioService);
 }
 {{/Class}}

@@ -3,13 +3,13 @@ project(clang_active_object_generator_example)
 
 # Generate the active objects
 execute_process (
-    COMMAND bash -c "../clang-active-object-generator \
+    COMMAND bash -c "clang-active-object-generator \
                         ${CMAKE_CURRENT_SOURCE_DIR}/ICalculator.hpp ICalculator \
                       > ${CMAKE_CURRENT_SOURCE_DIR}/ICalculatorActiveObject.hpp"
     OUTPUT_VARIABLE ICalculatorGeneratorOutput
 )
 execute_process (
-    COMMAND bash -c "../clang-active-object-generator \
+    COMMAND bash -c "clang-active-object-generator \
                          ${CMAKE_CURRENT_SOURCE_DIR}/IResultObserver.hpp IResultObserver \
                        > ${CMAKE_CURRENT_SOURCE_DIR}/IResultObserverActiveObject.hpp"
     OUTPUT_VARIABLE IResultObserverGeneratorOutput
